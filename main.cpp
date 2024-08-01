@@ -45,6 +45,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
     srand((unsigned) time(0));  // Inicializa a semente do gerador de números aleatórios
 }
 
+
 void MyFrame::OnGenerateSenha(wxCommandEvent& event) {
     int tipo = rand() % 2;  // 0 para não-preferencial, 1 para preferencial
     static int contadorNaoPref = 100;
