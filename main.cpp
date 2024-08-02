@@ -13,11 +13,9 @@ private:
     void OnEncerrarAtendimento(wxCommandEvent& event);
 
     //declarados global
-    wxListBox* m_senhaList;
+    wxListBox* senhaList;
     wxListBox* senhaPreferencialList;
     wxStaticText* senha;
-    wxArrayString* senhasPreferenciais;
-    wxList* senhaPreferencialList2;
     wxDECLARE_EVENT_TABLE();
 };
 
@@ -47,7 +45,7 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
     wxPanel* panel = new wxPanel(this, wxID_ANY);
     //wxStaticText* ultimoschamados = new wxStaticText(panel, wxID_ANY, wxT("Últimas Chamadas: "), wxPoint(0, 20),wxSize(400, -1), wxALIGN_CENTRE_HORIZONTAL);
     senha = new wxStaticText(panel, wxID_ANY, "Ultimos chamados: ", wxPoint(0, 20), wxSize(310, -1), wxALIGN_RIGHT);
-    m_senhaList = new wxListBox(panel, wxID_ANY, wxPoint(20, 50), wxSize(350, 150));
+    senhaList = new wxListBox(panel, wxID_ANY, wxPoint(20, 50), wxSize(350, 150));
     senhaPreferencialList = new wxListBox(panel, wxID_ANY, wxPoint(-9999, 9999));
     wxButton* gerarSenha = new wxButton(panel, 10001, wxT("Gerar Senha"), wxPoint(20, 220));
     wxButton* chamarSenha = new wxButton(panel, 2, wxT("Chamar Senha"), wxPoint(120, 220));
@@ -59,11 +57,11 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
 }
 
 void MyFrame::OnChamadoSenha(wxCommandEvent &event) {
-    int pegarUltimo = m_senhaList->GetCount();
+    int pegarUltimo = senhaList->GetCount();
     // wxLogStatus(m_senhaList->GetString(pegarUltimo - 1));
 
     if(pegarUltimo > 0) {
-        senha->SetLabel("Ultimos chamados: " + m_senhaList->GetString(pegarUltimo - 1));
+        senha->SetLabel("Ultimos chamados: " + senhaList->GetString(pegarUltimo - 1));
     }
 }
 
@@ -76,12 +74,12 @@ void MyFrame::OnChamadoSenhaPreferencial(wxCommandEvent &event) {
 
 
 void MyFrame::OnEncerrarAtendimento(wxCommandEvent &event) {
-    int pegarUltimo = m_senhaList->GetCount();
+    int pegarUltimo = senhaList->GetCount();
     wxLogStatus("clickado");
 
 
     if(pegarUltimo > 0) {
-        m_senhaList->Delete(pegarUltimo - 1);
+        senhaList->Delete(pegarUltimo - 1);
     }
 
 }
@@ -99,7 +97,6 @@ void MyFrame::OnGerarSenha(wxCommandEvent& event) {
     } else {
         senha = wxString::Format("PRI%03d", ++contadorPref);
         senhaPreferencialList->InsertItems(1, &senha, 0);
-        senhasPreferenciais->Add(senha);
     }
-    m_senhaList->InsertItems(1, &senha, 0);
+    senhaList->InsertItems(1, &senha, 0);
 }
