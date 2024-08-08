@@ -13,10 +13,15 @@ private:
     void OnChamadoSenhaPreferencial(wxCommandEvent& event);
     void OnEncerrarAtendimento(wxCommandEvent& event);
 
+    void ChamarSenha(int guicheId);
+    void ChamarSenhaPreferencial(int guicheId);
+    void EncerrarAtendimento(int guicheID);
+
     //declarados global
     wxListBox* senhaList;
     wxListBox* senhaPreferencialList;
     wxStaticText* senha;
+    wxString senhaDoGuiche;
     wxStaticText* guiche[4];
     wxDECLARE_EVENT_TABLE();
 
@@ -57,15 +62,13 @@ bool MyApp::OnInit() {
     return true;
 }
 
-
-
 MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(800, 600)) {
     wxPanel* panel = new wxPanel(this, wxID_ANY);
     //wxStaticText* ultimoschamados = new wxStaticText(panel, wxID_ANY, wxT("Últimas Chamadas: "), wxPoint(0, 20),wxSize(400, -1), wxALIGN_CENTRE_HORIZONTAL);
     senha = new wxStaticText(panel, wxID_ANY, "Ultimo chamado: ", wxPoint(600, 20), wxSize(460, 200), wxALIGN_RIGHT);
     senha->SetFont(wxFont(20, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
     senhaList = new wxListBox(panel, wxID_ANY, wxPoint(650, 100), wxSize(600, 500));
-    senhaPreferencialList = new wxListBox(panel, wxID_ANY, wxPoint(-9999, 9999));
+    senhaPreferencialList = new wxListBox(panel, wxID_ANY, wxPoint(600, 899));
     wxButton* gerarSenha = new wxButton(panel, 2, wxT("Gerar Senha"), wxPoint(20, 220));
     wxButton* chamarSenha = new wxButton(panel, 3, wxT("Chamar Senha"), wxPoint(120, 220));
     wxButton* encerrarAtendimento = new wxButton(panel, 4, wxT("Encerrar Atendimento"), wxPoint(230, 220));
@@ -85,35 +88,6 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
     this->ShowFullScreen(true);
     //this->ShowFullScreen(true, wxFULLSCREEN_NOSTATUSBAR || wxFULLSCREEN_NOBORDER || wxFULLSCREEN_NOCAPTION);
     CreateStatusBar();
-    srand((unsigned) time(0));  // Inicializa a semente do gerador de números aleatórios
-}
-
-void MyFrame::OnChamadoSenha(wxCommandEvent &event) {
-    int pegarUltimo = senhaList->GetCount();
-    // wxLogStatus(m_senhaList->GetString(pegarUltimo - 1));
-
-    if(pegarUltimo > 0) {
-        //guiche->SetLabel("Guiche 01: " + senhaList->GetString(pegarUltimo - 1));
-    }
-}
-
-void MyFrame::OnChamadoSenhaPreferencial(wxCommandEvent &event) {
-    int pegarUltimo = senhaPreferencialList->GetCount();
-    if(pegarUltimo > 0) {
-        senha->SetLabel("Ultimo chamado: " + senhaPreferencialList->GetString(pegarUltimo - 1));
-    }
-}
-
-
-void MyFrame::OnEncerrarAtendimento(wxCommandEvent &event) {
-    int pegarUltimo = senhaList->GetCount();
-    wxLogStatus("clickado");
-
-
-    if(pegarUltimo > 0) {
-        senhaList->Delete(pegarUltimo - 1);
-    }
-
 }
 
 void MyFrame::OnGerarSenha(wxCommandEvent& event) {
@@ -130,3 +104,47 @@ void MyFrame::OnGerarSenhaPreferencial(wxCommandEvent& event) {
     senhaPreferencialList->InsertItems(1, &senha, 0);
     senhaList->InsertItems(1, &senha, 0);
 }
+
+void MyFrame::OnChamadoSenha(wxCommandEvent &event) {
+    int pegarUltimo = senhaList->GetCount();
+    wxString id = wxString::Format("%d", event.GetId());
+     wxLogStatus(id);
+
+    if(pegarUltimo > 0) {
+        senha->SetLabel("Ultimo Chamado: " + senhaList->GetString(pegarUltimo - 1));
+        senhaDoGuiche = senhaList->GetString(pegarUltimo - 1);
+    }
+}
+
+
+
+
+void MyFrame::OnChamadoSenhaPreferencial(wxCommandEvent &event) {
+    int pegarUltimo = senhaPreferencialList->GetCount();
+    if(pegarUltimo > 0) {
+        senha->SetLabel("Ultimo chamado: " + senhaPreferencialList->GetString(pegarUltimo - 1));
+        senhaDoGuiche = senhaPreferencialList->GetString(pegarUltimo -1);
+    }else {
+        senha->SetLabel("Ultimo chamado: ");
+    }
+}
+
+void MyFrame::OnEncerrarAtendimento(wxCommandEvent &event) {
+    wxLogStatus("clickado");
+    int pegarUltimo = senhaList->GetCount();
+    int pegarUltimoPreferencial = senhaPreferencialList->GetCount();
+    if(pegarUltimo > 0) {
+        if(senhaDoGuiche.StartsWith("PRI")) {
+            senhaPreferencialList->Delete(pegarUltimoPreferencial - 1);
+        }
+        for(int i = pegarUltimo - 1; i >= 0; i--) {
+            if(senhaList->GetString(i) == senhaDoGuiche) {
+                senhaList->Delete(i);
+                senhaDoGuiche = "";
+                break;
+            }
+        }
+    }
+}
+
+
