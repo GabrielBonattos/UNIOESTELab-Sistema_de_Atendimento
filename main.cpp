@@ -1,8 +1,8 @@
 #include <wx/wx.h>
 #include <cstdlib>
-#include <ctime>
 #include <map>
-#include <set>
+#include <ctime>
+#include <wx/datetime.h>
 
 class MyFrame : public wxFrame {
 public:
@@ -14,15 +14,15 @@ private:
     void OnChamadoSenha(wxCommandEvent& event);
     void OnChamadoSenhaPreferencial(wxCommandEvent& event);
     void OnEncerrarAtendimento(wxCommandEvent& event);
-
     void ChamarSenha(int guicheId);
     void ChamarSenhaPreferencial(int guicheId);
     void EncerrarAtendimento(int guicheID);
+    void OnTimer(wxTimerEvent&);
+    void AtualizarHoraData();
 
-    //declarados global
+
     std::map<int, wxString> guicheSenhas;
-    std::set<wxString> senhasChamadas;
-
+    wxListBox* senhaChamadas2;
     wxListBox* senhaList;
     wxListBox* senhaPreferencialList;
     wxListBox* senhaChamados;
@@ -31,16 +31,14 @@ private:
     wxString senhaChamada;
     wxStaticText* guiche[4];
     int senhaAtual[4];
+    wxStaticText* tempo;
+    wxTimer* timer;
     wxDECLARE_EVENT_TABLE();
-
 
 };
 
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(2, MyFrame::OnGerarSenha)
-    EVT_BUTTON(3, MyFrame::OnChamadoSenha)
-    EVT_BUTTON(4, MyFrame::OnEncerrarAtendimento)
-    EVT_BUTTON(5, MyFrame::OnChamadoSenhaPreferencial)
     EVT_BUTTON(6, MyFrame::OnGerarSenhaPreferencial)
     EVT_BUTTON(10, MyFrame::OnChamadoSenha)
     EVT_BUTTON(11, MyFrame::OnChamadoSenhaPreferencial)
@@ -60,6 +58,7 @@ wxEND_EVENT_TABLE()
 class MyApp : public wxApp {
 public:
     virtual bool OnInit();
+
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -75,14 +74,13 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
 
     senha = new wxStaticText(panel, wxID_ANY, "Ultimo chamado: ", wxPoint(600, 20), wxSize(460, 200), wxALIGN_RIGHT);
     senha->SetFont(wxFont(20, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-    senhaList = new wxListBox(panel, wxID_ANY, wxPoint(650, 100), wxSize(600, 500));
-    senhaPreferencialList = new wxListBox(panel, wxID_ANY, wxPoint(600, 899));
-    senhaChamados = new wxListBox(panel, wxID_ANY, wxPoint(900, 900), wxSize(300, 300));
+    senhaList = new wxListBox(panel, wxID_ANY, wxPoint(600, 700), wxSize(300, 300));
+    senhaPreferencialList = new wxListBox(panel, wxID_ANY, wxPoint(200, 899));
+    senhaChamados = new wxListBox(panel, wxID_ANY, wxPoint(650, 100), wxSize(600, 600));
 
+    senhaChamadas2 = new wxListBox(panel, wxID_ANY, wxPoint(300, 700), wxSize(300, 300));
+    senhaChamados->SetFont(wxFont(20, wxFONTFAMILY_SCRIPT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
     wxButton* gerarSenha = new wxButton(panel, 2, wxT("Gerar Senha"), wxPoint(20, 220));
-    wxButton* chamarSenha = new wxButton(panel, 3, wxT("Chamar Senha"), wxPoint(120, 220));
-    wxButton* encerrarAtendimento = new wxButton(panel, 4, wxT("Encerrar Atendimento"), wxPoint(230, 220));
-    wxButton* ChamarSenhaPreferencial = new wxButton(panel, 5, wxT("Chamar Senha Preferencial"), wxPoint(390,220));
     wxButton* gerarSenhaPreferencial = new wxButton(panel, 6, wxT("Gerar Senha Preferencial"), wxPoint(20,270));
 
     //guiches
@@ -95,10 +93,19 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title, wxDefau
         new wxButton(panel, 12 + i * 10, wxT("Encerrar Atendimento"), wxPoint(1700, 100 + i * 150));
     }
 
+    tempo = new wxStaticText(panel, wxID_ANY, "", wxPoint(700, 800), wxDefaultSize);
+    tempo->SetFont(wxFont(20, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    timer = new wxTimer(this);
+    Bind(wxEVT_TIMER, &MyFrame::OnTimer, this);
+    timer->Start(1000); // Atualizar a cada segundo
+    AtualizarHoraData();
+
+    senhaList->Show(false);
+    senhaChamadas2->Show(false);
+    senhaPreferencialList->Show(false);
     this->ShowFullScreen(true);
-    //this->ShowFullScreen(true, wxFULLSCREEN_NOSTATUSBAR || wxFULLSCREEN_NOBORDER || wxFULLSCREEN_NOCAPTION);
-    CreateStatusBar();
 }
+
 
 void MyFrame::OnGerarSenha(wxCommandEvent& event) {
     static int contadorNaoPref = 0;
@@ -129,12 +136,24 @@ void MyFrame::OnChamadoSenhaPreferencial(wxCommandEvent &event) {
 
 void MyFrame::ChamarSenha(int guicheId) {
     int pegarUltimo = senhaList->GetCount();
+    int pegarUltimoPreferencial = senhaPreferencialList->GetCount();
     if(pegarUltimo > 0) {
-
+        if(!guicheSenhas[guicheId].empty()) {
+            wxMessageBox("Essa senha ja foi chamada");
+            return;
+        }
+        senhaDoGuiche = senhaList->GetString(pegarUltimo - 1);
         guiche[guicheId]->SetLabel(wxString::Format("Guiche %d: ", guicheId+1) + senhaList->GetString(pegarUltimo - 1));
         senha->SetLabel("Ultimo Chamado: \n" + senhaList->GetString(pegarUltimo - 1) + wxString::Format(" - Guiche %d", guicheId+1));
         senhaDoGuiche = senhaList->GetString(pegarUltimo - 1);
         senhaChamada = senhaDoGuiche + wxString::Format(" Guiche %d", guicheId+1);
+
+        guicheSenhas[guicheId] = senhaDoGuiche;
+        senhaChamadas2->InsertItems(1, &senhaDoGuiche, 0);
+        senhaList->Delete(pegarUltimo - 1);
+        if(senhaDoGuiche.StartsWith("PRI")) {
+            senhaPreferencialList->Delete(pegarUltimoPreferencial - 1);
+        }
 
         bool existe = false;
         int quantidadeSenhasChamadas = senhaChamados->GetCount();
@@ -154,14 +173,20 @@ void MyFrame::ChamarSenha(int guicheId) {
 void MyFrame::ChamarSenhaPreferencial(int guicheId) {
     int pegarUltimo = senhaPreferencialList->GetCount();
     if(pegarUltimo > 0) {
+        if(!guicheSenhas[guicheId].empty()) {
+            wxMessageBox("Essa senha ja foi chamada");
+            return;
+        }
         guiche[guicheId]->SetLabel(wxString::Format("Guiche %d: ", guicheId+1) + senhaPreferencialList->GetString(pegarUltimo - 1));
         senha->SetLabel("Ultimo chamado: \n" + senhaPreferencialList->GetString(pegarUltimo - 1) + wxString::Format("-Guiche %d", guicheId + 1));
         senhaDoGuiche = senhaPreferencialList->GetString(pegarUltimo -1);
-
-        senhaDoGuiche = senhaList->GetString(pegarUltimo - 1);
+        guicheSenhas[guicheId] = senhaDoGuiche;
+        senhaChamadas2->InsertItems(1, &senhaDoGuiche, 0);
+        senhaList->Delete(pegarUltimo - 1);
+        senhaPreferencialList->Delete(pegarUltimo - 1);
         senhaChamada = senhaDoGuiche + wxString::Format(" Guiche %d", guicheId+1);
-        bool existe = false;
 
+        bool existe = false;
         for(int i = 0; i < senhaChamados->GetCount(); i++) {
             if(senhaChamados->GetString(i) == senhaChamada) {
                 existe = true;
@@ -180,29 +205,41 @@ void MyFrame::OnEncerrarAtendimento(wxCommandEvent &event) {
 }
 
 void MyFrame::EncerrarAtendimento(int guicheID) {
-    int pegarUltimo = senhaList->GetCount();
+    int pegarUltimo = senhaChamadas2->GetCount();
     int pegarUltimoPreferencial = senhaPreferencialList->GetCount();
-    if(pegarUltimo > 0) {
-        if(senhaDoGuiche.StartsWith("PRI")) {
-            senhaPreferencialList->Delete(pegarUltimoPreferencial - 1);
-        }
-        for(int i = pegarUltimo - 1; i >= 0; i--) {
-            if(senhaList->GetString(i) == senhaDoGuiche) {
-                senhaList->Delete(i);
-                senhaDoGuiche = "";
-                break;
-            }
-        }
-        for(int i = 0; i < senhaChamados->GetCount(); i++) {
-            if(senhaChamados->GetString(i) == senhaChamada) {
-                senhaChamados->Delete(i);
-                break;
-            }
-        }
+        if(!guicheSenhas[guicheID].IsEmpty()) {
+            wxString senhaAtual = guicheSenhas[guicheID];
+            guicheSenhas.erase(guicheID);
 
-    }
+            // if(senhaAtual.StartsWith("PRI")) {
+            //     senhaPreferencialList->Delete(pegarUltimoPreferencial - 1);
+            // }
+            for(int i = 0; i < senhaChamadas2->GetCount(); i++) {
+                if(senhaChamadas2->GetString(i) == senhaAtual) {
+                    senhaChamadas2->Delete(i);
+                    break;
+                }
+            }
+            senhaChamada = senhaAtual + wxString::Format(" Guiche %d", guicheID+1);
+            for(int i = 0; i < senhaChamados->GetCount(); i++) {
+                if(senhaChamados->GetString(i) == senhaChamada) {
+                    senhaChamados->Delete(i);
+                    break;
+                }
+            }
+        }
+        guiche[guicheID]->SetLabel(wxString::Format("Guiche %d: ", guicheID + 1));
 }
 
+void MyFrame::AtualizarHoraData() {
+    wxDateTime agora = wxDateTime::Now();
+    wxString dataHoraStr = agora.Format("%d/%m/%Y %H:%M:%S");
+    tempo->SetLabel("Foz Do Iguacu " +dataHoraStr);
+}
+
+void MyFrame::OnTimer(wxTimerEvent&) {
+    AtualizarHoraData();
+}
 
 
 
