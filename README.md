@@ -17,3 +17,10 @@
   <pre>sudo apt install libwxgtk3.2-dev libwxgtk-media3.2-dev libboost-dev cmake make git</pre>
  </li>
 </ul>
+
+<p>Compilação e execução</p>
+<pre>
+g++ -o UnioesteLab main.cpp `wx-config --cxxflags --libs`
+
+./UnioesteLab
+</pre>
