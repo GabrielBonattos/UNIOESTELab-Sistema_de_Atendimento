@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <ctime>
+#include <wx/timer.h>
 #include <wx/datetime.h>
 
 class MyFrame : public wxFrame {
@@ -18,7 +19,7 @@ private:
     void ChamarSenha(int guicheId);
     void ChamarSenhaPreferencial(int guicheId);
     void EncerrarAtendimento(int guicheID);
-    void OnTimer(wxTimerEvent&);
+    void OnPegarHora(wxTimerEvent&);
     void AtualizarHoraData();
 
     std::vector<std::string> listaSenhas;
@@ -53,6 +54,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON(40, MyFrame::OnChamadoSenha)
     EVT_BUTTON(41, MyFrame::OnChamadoSenhaPreferencial)
     EVT_BUTTON(42, MyFrame::OnEncerrarAtendimento)
+    EVT_TIMER(wxID_ANY, MyFrame::OnPegarHora)
 
 wxEND_EVENT_TABLE()
 
@@ -73,9 +75,9 @@ bool MyApp::OnInit() {
 MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title) {
     wxPanel* panel = new wxPanel(this, wxID_ANY);
 
-    senha = new wxStaticText(panel, wxID_ANY, "Ultimo chamado: ", wxPoint(600, 20), wxSize(460, 200), wxALIGN_RIGHT);
-    senha->SetFont(wxFont(20, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-    senhaChamados = new wxListBox(panel, wxID_ANY, wxPoint(650, 100), wxSize(600, 600));
+    senha = new wxStaticText(panel, wxID_ANY, "Ultimo Chamado: ", wxPoint(600, 20), wxSize(460, 200), wxALIGN_RIGHT);
+    senha->SetFont(wxFont(30, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    senhaChamados = new wxListBox(panel, wxID_ANY, wxPoint(650, 150), wxSize(600, 600));
     senhaChamados->SetFont(wxFont(20, wxFONTFAMILY_SCRIPT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
     wxButton* gerarSenha = new wxButton(panel, 2, wxT("Gerar Senha"), wxPoint(20, 220));
     wxButton* gerarSenhaPreferencial = new wxButton(panel, 6, wxT("Gerar Senha Preferencial"), wxPoint(20,270));
@@ -90,12 +92,10 @@ MyFrame::MyFrame(const wxString& title) : wxFrame(NULL, wxID_ANY, title) {
         new wxButton(panel, 12 + i * 10, wxT("Encerrar Atendimento"), wxPoint(1700, 100 + i * 150));
     }
 
-    tempo = new wxStaticText(panel, wxID_ANY, "", wxPoint(700, 800), wxDefaultSize);
-    tempo->SetFont(wxFont(20, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
-    timer = new wxTimer(this);
-    Bind(wxEVT_TIMER, &MyFrame::OnTimer, this);
+    tempo = new wxStaticText(panel, wxID_ANY, "", wxPoint(620, 800), wxDefaultSize);
+    tempo->SetFont(wxFont(30, wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD));
+    timer = new wxTimer(this, wxID_ANY);
     timer->Start(1000);
-    AtualizarHoraData();
     this->ShowFullScreen(true);
 }
 
@@ -170,7 +170,7 @@ void MyFrame::ChamarSenhaPreferencial(int guicheId) {
         }
         senhaDoGuiche = listaSenhasPreferenciais.back();
         guiche[guicheId]->SetLabel(wxString::Format("Guiche %d: ", guicheId+1) + senhaDoGuiche);
-        senha->SetLabel("Ultimo chamado: \n" + senhaDoGuiche + wxString::Format("-Guiche %d", guicheId + 1));
+        senha->SetLabel("Ultimo Chamado: \n" + senhaDoGuiche + wxString::Format("-Guiche %d", guicheId + 1));
 
         guicheSenhas[guicheId] = senhaDoGuiche;
         listaSenhaChamadas.insert(listaSenhaChamadas.begin(), senhaDoGuiche.ToStdString());
@@ -228,12 +228,18 @@ void MyFrame::EncerrarAtendimento(int guicheID) {
 }
 
 void MyFrame::AtualizarHoraData() {
-    wxDateTime agora = wxDateTime::Now();
-    wxString dataHoraStr = agora.Format("%d/%m/%Y %H:%M:%S");
-    tempo->SetLabel("Foz Do Iguacu " +dataHoraStr);
+
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer [80];
+    time (&rawtime);
+    timeinfo = localtime (&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%d/%m/%Y %H:%M:%S", timeinfo);
+    tempo->SetLabel(wxString::Format("Foz do Iguacu %s", buffer));
 }
 
-void MyFrame::OnTimer(wxTimerEvent&) {
+void MyFrame::OnPegarHora(wxTimerEvent&) {
     AtualizarHoraData();
 }
 
