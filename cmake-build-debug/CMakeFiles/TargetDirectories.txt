@@ -1,3 +1,0 @@
-/home/gabriel/Documentos/repositorios/trab_ies/cmake-build-debug/CMakeFiles/trab_ies.dir
-/home/gabriel/Documentos/repositorios/trab_ies/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/gabriel/Documentos/repositorios/trab_ies/cmake-build-debug/CMakeFiles/rebuild_cache.dir
